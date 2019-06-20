@@ -133,69 +133,10 @@ namespace RegAllAppX
             Environment.Exit(returnValue);
         }
 
-        private static int doAddPackageAsyncForAllUsers()
-        {
-            int returnValue = 0;
-            try
-            {
-                PackageManager packageManager = new PackageManager();
-
-                foreach (Package item in packageManager.FindPackagesForUser(string.Empty))
-                {
-                    LogThis(item.InstalledLocation.Path);
-
-                    IAsyncOperationWithProgress<DeploymentResult, DeploymentProgress> deploymentOperation =
-                        packageManager.AddPackageAsync(
-                            new Uri(item.InstalledLocation.Path + @"\appxmanifest.xml"),
-                            null,
-                            DeploymentOptions.ForceApplicationShutdown | DeploymentOptions.ForceTargetApplicationShutdown);
-
-                    ManualResetEvent opCompletedEvent = new ManualResetEvent(false);
-
-                    deploymentOperation.Completed = (depProgress, status) => { opCompletedEvent.Set(); };
-
-                    opCompletedEvent.WaitOne();
-
-                    if (deploymentOperation.Status == AsyncStatus.Error)
-                    {
-                        DeploymentResult deploymentResult = deploymentOperation.GetResults();
-                        LogThis(string.Format("Error code: {0}", deploymentOperation.ErrorCode));
-                        LogThis(string.Format("Error text: {0}", deploymentResult.ErrorText));
-                        returnValue = deploymentOperation.ErrorCode.HResult;
-                    }
-                    else if (deploymentOperation.Status == AsyncStatus.Canceled)
-                    {
-                        LogThis("Installation cancelled");
-                        returnValue = 1602;
-                    }
-                    else if (deploymentOperation.Status == AsyncStatus.Completed)
-                    {
-                        LogThis("Installation succeeded");
-                        returnValue = 0;
-                    }
-                    else
-                    {
-                        returnValue = 1;
-                        LogThis("Installation status unknown");
-                    }
-
-                }
-
-                return returnValue;
-            }
-
-            catch (Exception ex)
-            {
-                LogThis("ERROR : " + ex.Message);
-                returnValue = ex.HResult;
-                return returnValue;
-            }
-        }
-
         private static void LogThis(string logentry = "")
         {
 #if DEBUG
-            global::System.Windows.Forms.MessageBox.Show(logentry);
+            Debug.WriteLine(logentry);
 #endif
             if (loggingEnabled)
             {
